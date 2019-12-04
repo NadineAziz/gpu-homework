@@ -71,10 +71,15 @@ protected:
 	float delta_time;
 
 	const int num_particles = 25000;
-	const float particle_size = 0.01f;
+	const float particle_size = 0.02f;
 	const bool bRing = true;
 	const bool bRandVelocities = true;
 	const float massiveObjectMass = 1;
+
+
+	std::vector<float> initialMasses;
+	std::vector<float> initialPositions;
+	std::vector<float> initialVelocities;
 
 #pragma region GL functions
 

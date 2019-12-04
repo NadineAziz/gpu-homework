@@ -4,6 +4,8 @@
 #include <GL/GLU.h>
 #include <math.h>
 
+// 
+#include <algorithm>
 
 bool CMyApp::InitGL()
 {
@@ -109,65 +111,6 @@ bool CMyApp::InitCL()
 		///////////////////////////
 		// Set-up the simulation //
 		///////////////////////////
-
-		/// set masses
-
-		std::vector<float> masses(num_particles, 1);
-		masses[rand() % masses.size()] = massiveObjectMass;
-		command_queue.enqueueWriteBuffer(cl_m, CL_TRUE, 0, num_particles * sizeof(float), &masses[0]);
-
-		/// set initial velocities
-
-		std::vector<float> vectors(num_particles*2, 0);
-		if(bRandVelocities)
-		{
-			// FELADAT: random sebességek
-
-			for (size_t i = 0; i < vectors.size(); i += 2)
-			{
-				double t = i / double(vectors.size() / 2) * (2 * M_PI);
-				double st = sin(t);
-				double ct = cos(t);
-				double v = 1.7;
-				vectors[i + 0] = -ct * v;
-				vectors[i + 1] = st * v;
-			}
-		}
-
-		command_queue.enqueueWriteBuffer(cl_v, CL_TRUE, 0, num_particles * sizeof(float) * 2, &vectors[0]);
-
-		/// set initial positions
-
-		for (size_t i = 0; i < vectors.size(); ++i)
-		{
-			vectors[i] = ((rand() / float(RAND_MAX)) * 2 - 1);
-		}
-
-		if(bRing)
-		{
-			auto rand_1_1 = []() {
-				return (rand() / float(RAND_MAX)) * 2 - 1; 
-			};
-
-			// FELADAT: gyûrûben elhelyezni a pontokat!
-			for (size_t i = 0; i < vectors.size(); i+=2)
-			{
-				double t = i / double(vectors.size() / 2) * (2 * M_PI);
-				double st = sin(t);
-				double ct = cos(t);
-				double r = 0.25;
-				vectors[i + 0] = r * st + rand_1_1() / 5.0;
-				vectors[i + 1] = r * ct + rand_1_1() / 5.0;
-			}
-		}
-		
-		// pozíciók: buffer feltöltése opengl használatával
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		float* values = static_cast<float*>(glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY));
-		for (size_t i = 0; i < vectors.size(); ++i)
-			values[i] = vectors[i];
-		glUnmapBuffer(GL_ARRAY_BUFFER);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 		// kernel args
 		kernel_update.setArg(0, cl_v);			// velocities
@@ -308,6 +251,20 @@ void CMyApp::Resize(int _w, int _h)
 
 CMyApp::CMyApp(void)
 {
+	auto randBetween = [](float min, float max) {return (rand() / float(RAND_MAX)) * (max - min) + min; };
+
+	// masses
+	initialMasses = std::vector<float>(num_particles, 1);
+
+	// velocities
+	initialVelocities = std::vector<float>(num_particles * 2, 0);
+
+	// initial positions
+	initialPositions = std::vector<float>(num_particles * 2, 0);
+
+	generate(initialMasses.begin(), initialMasses.end(), [&]() {return randBetween(.1, 2); });
+	generate(initialVelocities.begin(), initialVelocities.end(), [&]() {return randBetween(-1, 1); });
+	generate(initialPositions.begin(), initialPositions.end(), [&]() {return randBetween(-1, 1); });
 }
 
 CMyApp::~CMyApp(void)

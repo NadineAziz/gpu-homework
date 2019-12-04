@@ -83,6 +83,10 @@ protected:
 	std::vector<float> initialPositions;
 	std::vector<float> initialVelocities;
 
+	bool quit;
+	bool pause;
+	Uint32 last_time;
+
 #pragma region GL functions
 
 	gShaderProgram	m_program;

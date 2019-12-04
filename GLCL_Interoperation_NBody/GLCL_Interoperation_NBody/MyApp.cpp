@@ -79,7 +79,7 @@ bool CMyApp::InitCL()
 
 		// Create Command Queue
 		cl::vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
-		std::cout << devices[0].getInfo<CL_DEVICE_NAME>() << std::endl;
+		//std::cout << devices[0].getInfo<CL_DEVICE_NAME>() << std::endl;
 		command_queue = cl::CommandQueue(context, devices[0]);
 
 		/////////////////////////////////
@@ -261,9 +261,11 @@ void CMyApp::resetSimulation()
 
 	/// set initial velocities
 	command_queue.enqueueWriteBuffer(cl_vbo_mem, CL_TRUE, 0, num_particles * sizeof(float) * 2, &initialPositions[0]);
+
+	pause = true;
 }
 
-CMyApp::CMyApp(void)
+CMyApp::CMyApp(void):quit(false), pause(true)
 {
 	auto randBetween = [](float min, float max) {return (rand() / float(RAND_MAX)) * (max - min) + min; };
 

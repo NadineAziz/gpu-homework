@@ -112,6 +112,8 @@ bool CMyApp::InitCL()
 		// Set-up the simulation //
 		///////////////////////////
 
+		resetSimulation();
+
 		// kernel args
 		kernel_update.setArg(0, cl_v);			// velocities
 		kernel_update.setArg(1, cl_vbo_mem);	// positions
@@ -247,6 +249,18 @@ void CMyApp::Resize(int _w, int _h)
 	glViewport(0, 0, _w, _h);
 	windowH = _h;
 	windowW = _w;
+}
+
+void CMyApp::resetSimulation()
+{
+	/// set masses
+	command_queue.enqueueWriteBuffer(cl_m, CL_TRUE, 0, num_particles * sizeof(float), &initialMasses[0]);
+
+	/// set initial velocities
+	command_queue.enqueueWriteBuffer(cl_v, CL_TRUE, 0, num_particles * sizeof(float) * 2, &initialVelocities[0]);
+
+	/// set initial velocities
+	command_queue.enqueueWriteBuffer(cl_vbo_mem, CL_TRUE, 0, num_particles * sizeof(float) * 2, &initialPositions[0]);
 }
 
 CMyApp::CMyApp(void)

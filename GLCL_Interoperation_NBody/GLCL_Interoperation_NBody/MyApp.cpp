@@ -144,11 +144,6 @@ void CMyApp::Clean()
 
 void CMyApp::Update()
 {
-	static Uint32 last_time = SDL_GetTicks();
-	delta_time = (SDL_GetTicks() - last_time)/1000.0f;
-	//if (delta_time > 0.05f) delta_time = 0.05f;
-	if (delta_time < 0.0001f) delta_time = 0.0001f;
-	if (delta_time > 0.1f) delta_time = 0.1f;
 	kernel_update.setArg(3, delta_time*2);
 
 	// CL
@@ -174,8 +169,6 @@ void CMyApp::Update()
 		std::cout << error.what() << "(" << oclErrorString(error.err()) << ")" << std::endl;
 		exit(1);
 	}
-
-	last_time = SDL_GetTicks();
 } 
 
 #pragma endregion
@@ -265,7 +258,7 @@ void CMyApp::resetSimulation()
 	pause = true;
 }
 
-CMyApp::CMyApp(void):quit(false), pause(true)
+CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-4), time_scaler(1.0)
 {
 	auto randBetween = [](float min, float max) {return (rand() / float(RAND_MAX)) * (max - min) + min; };
 

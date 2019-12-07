@@ -70,13 +70,11 @@ protected:
 	cl::BufferGL cl_vbo_mem;
 	cl::Buffer cl_v, cl_m;
 
-	float delta_time;
 
-	const int num_particles = 25000;
+	int num_particles = 5000;
 	const float particle_size = 0.02f;
 	const bool bRing = true;
-	const bool bRandVelocities = true;
-	const float massiveObjectMass = 1;
+	const bool bRandVelocities = false;
 
 
 	std::vector<float> initialMasses;
@@ -85,7 +83,8 @@ protected:
 
 	bool quit;
 	bool pause;
-	Uint32 last_time;
+	float delta_time;
+	float time_scaler;
 
 #pragma region GL functions
 

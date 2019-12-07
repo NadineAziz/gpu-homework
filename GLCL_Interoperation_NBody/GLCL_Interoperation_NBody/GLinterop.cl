@@ -1,4 +1,4 @@
-__kernel void update(__global float2 *v, __global float2 *p, __global float* m, float dt)
+__kernel void update(__global float2 *v, __global float2 *p, __global float* m, float dt, float G)
 {
     int gid = get_global_id(0);
 
@@ -8,7 +8,7 @@ __kernel void update(__global float2 *v, __global float2 *p, __global float* m, 
 
     float mass = m[gid];
     float2 p_gid = p[gid];
-    const float G = 0.0001;
+    //const float G = 0.0001;
 
     for (int i = 0; i < get_global_size(0); ++i)
     {

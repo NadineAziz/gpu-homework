@@ -118,6 +118,7 @@ bool CMyApp::InitCL()
 		kernel_update.setArg(0, cl_v);			// velocities
 		kernel_update.setArg(1, cl_vbo_mem);	// positions
 		kernel_update.setArg(2, cl_m);			// masses
+		kernel_update.setArg(4, G);			    // G
 	}
 	catch (cl::Error error)
 	{
@@ -214,6 +215,12 @@ void CMyApp::Render()
 
 void CMyApp::KeyboardDown(SDL_KeyboardEvent& key)
 {
+	switch (key.keysym.sym)
+	{
+	case SDLK_ESCAPE:
+		quit = true;
+		break;
+	}
 }
 
 void CMyApp::KeyboardUp(SDL_KeyboardEvent& key)
@@ -270,7 +277,7 @@ bool CMyApp::getQuit() const
 	return quit;
 }
 
-CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-4), time_scaler(1.0)
+CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-4), time_scaler(1.0), G(0.0001)
 {
 	auto randBetween = [](float min, float max) {return (rand() / float(RAND_MAX)) * (max - min) + min; };
 

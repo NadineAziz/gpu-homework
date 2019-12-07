@@ -10,5 +10,5 @@ out Vertex
 void main()
 {
 	gl_Position = vec4(vs_in_pos, 0, 1);
-	vertex.color = vec4(1,1,1,1);
+	vertex.color = vec4(0,1,1,1);
 }

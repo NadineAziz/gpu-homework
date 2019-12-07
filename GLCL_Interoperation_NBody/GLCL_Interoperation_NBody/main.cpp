@@ -15,7 +15,7 @@ void exitProgram()
 {
 	SDL_Quit();
 
-	std::cout << "Kilépéshez nyomj meg egy billentyût..." << std::endl;
+	std::cout << "Kilepeshez nyomj meg egy billentyut..." << std::endl;
 	std::cin.get();
 }
 
@@ -150,9 +150,6 @@ int main( int argc, char* args[] )
 				app.setQuit(true);
 				break;
 			case SDL_KEYDOWN:
-				if (ev.key.keysym.sym == SDLK_ESCAPE)
-					app.setQuit(true);
-
 				app.KeyboardDown(ev.key);
 				break;
 			case SDL_KEYUP:

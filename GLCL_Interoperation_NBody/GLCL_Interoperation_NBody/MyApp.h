@@ -88,6 +88,7 @@ protected:
 	bool pause;
 	float delta_time;
 	float time_scaler;
+	float G;
 
 #pragma region GL functions
 

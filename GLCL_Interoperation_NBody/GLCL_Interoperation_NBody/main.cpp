@@ -65,7 +65,7 @@ int main( int argc, char* args[] )
 	// hozzuk létre az ablakunkat
 	SDL_Window *win = 0;
     win = SDL_CreateWindow( "Hello SDL&OpenGL!",		// az ablak fejléce
-							100,						// az ablak bal-felsõ sarkának kezdeti X koordinátája
+							500,						// az ablak bal-felsõ sarkának kezdeti X koordinátája
 							100,						// az ablak bal-felsõ sarkának kezdeti Y koordinátája
 							800,						// ablak szélessége
 							800,						// és magassága
@@ -105,7 +105,7 @@ int main( int argc, char* args[] )
 	int glVersion[2] = {-1, -1}; 
 	glGetIntegerv(GL_MAJOR_VERSION, &glVersion[0]); 
 	glGetIntegerv(GL_MINOR_VERSION, &glVersion[1]); 
-	std::cout << "Running OpenGL " << glVersion[0] << "." << glVersion[1] << std::endl;
+	//std::cout << "Running OpenGL " << glVersion[0] << "." << glVersion[1] << std::endl;
 
 	if ( glVersion[0] == -1 && glVersion[1] == -1 )
 	{
@@ -125,8 +125,6 @@ int main( int argc, char* args[] )
 	// 3. lépés: indítsuk el a fõ üzenetfeldolgozó ciklust
 	// 
 
-	// véget kell-e érjen a program futása?
-	bool quit = false;
 	// feldolgozandó üzenet ide kerül
 	SDL_Event ev;
 	
@@ -141,7 +139,7 @@ int main( int argc, char* args[] )
 	
 	gTimer nanoTimer;
 
-	while (!quit)
+	while (!app.getQuit())
 	{
 		// amíg van feldolgozandó üzenet dolgozzuk fel mindet:
 		while ( SDL_PollEvent(&ev) )
@@ -149,11 +147,12 @@ int main( int argc, char* args[] )
 			switch (ev.type)
 			{
 			case SDL_QUIT:
-				quit = true;
+				app.setQuit(true);
 				break;
 			case SDL_KEYDOWN:
-				if ( ev.key.keysym.sym == SDLK_ESCAPE )
-					quit = true;
+				if (ev.key.keysym.sym == SDLK_ESCAPE)
+					app.setQuit(true);
+
 				app.KeyboardDown(ev.key);
 				break;
 			case SDL_KEYUP:

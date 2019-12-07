@@ -144,7 +144,7 @@ void CMyApp::Clean()
 
 void CMyApp::Update()
 {
-	kernel_update.setArg(3, delta_time*2);
+	kernel_update.setArg(3, delta_time * time_scaler * 2);
 
 	// CL
 	try {
@@ -256,6 +256,18 @@ void CMyApp::resetSimulation()
 	command_queue.enqueueWriteBuffer(cl_vbo_mem, CL_TRUE, 0, num_particles * sizeof(float) * 2, &initialPositions[0]);
 
 	pause = true;
+}
+
+
+
+void CMyApp::setQuit(const bool state)
+{
+	quit = state;
+}
+
+bool CMyApp::getQuit() const
+{
+	return quit;
 }
 
 CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-4), time_scaler(1.0)

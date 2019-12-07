@@ -53,6 +53,9 @@ public:
 	void Resize(int, int);
 
 	void resetSimulation();
+
+	void setQuit(const bool);
+	bool getQuit() const;
 protected:
 
 	// GL

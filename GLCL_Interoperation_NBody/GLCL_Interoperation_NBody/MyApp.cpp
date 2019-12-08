@@ -279,7 +279,7 @@ bool CMyApp::getQuit() const
 	return quit;
 }
 
-CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-4), time_scaler(1.0), G(0.0001)
+CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-3), time_scaler(1.0), G(0.0001)
 {
 	auto randBetween = [](float min, float max) {return (rand() / float(RAND_MAX)) * (max - min) + min; };
 
@@ -295,20 +295,36 @@ CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-4), time_scaler(1
 	generate(initialMasses.begin(), initialMasses.end(), [&]() {return randBetween(.1, 2); });
 	//generate(initialVelocities.begin(), initialVelocities.end(), [&]() {return randBetween(-1, 1); });
 	//generate(initialPositions.begin(), initialPositions.end(), [&]() {return randBetween(-1, 1); });
-	for (int i = 0; i < num_particles; i += 3)
+
+	const int Nlat = 50;
+	const int Nlong = 100;
+	const float r = 0.5;
+	assert(Nlat * Nlong == num_particles);
+
+	int idx = 0;
+	for (int i = 0; i < Nlat; i++)
 	{
-		initialPositions[i + 0] = randBetween(-1, 1);
-		initialPositions[i + 1] = randBetween(-1, 1);
-		initialPositions[i + 2] = randBetween(-1, 1) * 0;
+		for (int j = 0; j < Nlong; j++)
+		{
+			float phi = i * (2 * M_PI) / Nlat;
+			float theta   = j * (2 * M_PI) / Nlong;
+
+			initialPositions[idx + 0] = r * sin(theta) * cos(phi);
+			initialPositions[idx + 1] = r * sin(theta) * sin(phi);
+			initialPositions[idx + 2] = r * cos(theta);
+
+			idx -=- 3;
+		}
 	}
 
 
+
 	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	//model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 	
 	glm::mat4 view = glm::mat4(1.0f);
 	// note that we're translating the scene in the reverse direction of where we want to move
-	view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+	view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
 
 	glm::mat4 projection;
 	projection = glm::perspective(glm::radians(45.0f), static_cast<float>(windowW) / windowH, 0.1f, 100.0f);

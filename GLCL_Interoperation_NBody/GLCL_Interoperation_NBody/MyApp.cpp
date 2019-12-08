@@ -4,6 +4,8 @@
 #include <GL/GLU.h>
 #include <math.h>
 
+// 
+#include <algorithm>
 
 bool CMyApp::InitGL()
 {
@@ -77,7 +79,7 @@ bool CMyApp::InitCL()
 
 		// Create Command Queue
 		cl::vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
-		std::cout << devices[0].getInfo<CL_DEVICE_NAME>() << std::endl;
+		//std::cout << devices[0].getInfo<CL_DEVICE_NAME>() << std::endl;
 		command_queue = cl::CommandQueue(context, devices[0]);
 
 		/////////////////////////////////
@@ -110,69 +112,13 @@ bool CMyApp::InitCL()
 		// Set-up the simulation //
 		///////////////////////////
 
-		/// set masses
-
-		std::vector<float> masses(num_particles, 1);
-		masses[rand() % masses.size()] = massiveObjectMass;
-		command_queue.enqueueWriteBuffer(cl_m, CL_TRUE, 0, num_particles * sizeof(float), &masses[0]);
-
-		/// set initial velocities
-
-		std::vector<float> vectors(num_particles*2, 0);
-		if(bRandVelocities)
-		{
-			// FELADAT: random sebességek
-
-			for (size_t i = 0; i < vectors.size(); i += 2)
-			{
-				double t = i / double(vectors.size() / 2) * (2 * M_PI);
-				double st = sin(t);
-				double ct = cos(t);
-				double v = 1.7;
-				vectors[i + 0] = -ct * v;
-				vectors[i + 1] = st * v;
-			}
-		}
-
-		command_queue.enqueueWriteBuffer(cl_v, CL_TRUE, 0, num_particles * sizeof(float) * 2, &vectors[0]);
-
-		/// set initial positions
-
-		for (size_t i = 0; i < vectors.size(); ++i)
-		{
-			vectors[i] = ((rand() / float(RAND_MAX)) * 2 - 1);
-		}
-
-		if(bRing)
-		{
-			auto rand_1_1 = []() {
-				return (rand() / float(RAND_MAX)) * 2 - 1; 
-			};
-
-			// FELADAT: gyûrûben elhelyezni a pontokat!
-			for (size_t i = 0; i < vectors.size(); i+=2)
-			{
-				double t = i / double(vectors.size() / 2) * (2 * M_PI);
-				double st = sin(t);
-				double ct = cos(t);
-				double r = 0.25;
-				vectors[i + 0] = r * st + rand_1_1() / 5.0;
-				vectors[i + 1] = r * ct + rand_1_1() / 5.0;
-			}
-		}
-		
-		// pozíciók: buffer feltöltése opengl használatával
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		float* values = static_cast<float*>(glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY));
-		for (size_t i = 0; i < vectors.size(); ++i)
-			values[i] = vectors[i];
-		glUnmapBuffer(GL_ARRAY_BUFFER);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		resetSimulation();
 
 		// kernel args
 		kernel_update.setArg(0, cl_v);			// velocities
 		kernel_update.setArg(1, cl_vbo_mem);	// positions
 		kernel_update.setArg(2, cl_m);			// masses
+		kernel_update.setArg(4, G);			    // G
 	}
 	catch (cl::Error error)
 	{
@@ -199,12 +145,7 @@ void CMyApp::Clean()
 
 void CMyApp::Update()
 {
-	static Uint32 last_time = SDL_GetTicks();
-	delta_time = (SDL_GetTicks() - last_time)/1000.0f;
-	//if (delta_time > 0.05f) delta_time = 0.05f;
-	if (delta_time < 0.0001f) delta_time = 0.0001f;
-	if (delta_time > 0.1f) delta_time = 0.1f;
-	kernel_update.setArg(3, delta_time*2);
+	kernel_update.setArg(3, delta_time * time_scaler * 2);
 
 	// CL
 	try {
@@ -229,8 +170,6 @@ void CMyApp::Update()
 		std::cout << error.what() << "(" << oclErrorString(error.err()) << ")" << std::endl;
 		exit(1);
 	}
-
-	last_time = SDL_GetTicks();
 } 
 
 #pragma endregion
@@ -276,6 +215,12 @@ void CMyApp::Render()
 
 void CMyApp::KeyboardDown(SDL_KeyboardEvent& key)
 {
+	switch (key.keysym.sym)
+	{
+	case SDLK_ESCAPE:
+		quit = true;
+		break;
+	}
 }
 
 void CMyApp::KeyboardUp(SDL_KeyboardEvent& key)
@@ -306,8 +251,48 @@ void CMyApp::Resize(int _w, int _h)
 	windowW = _w;
 }
 
-CMyApp::CMyApp(void)
+void CMyApp::resetSimulation()
 {
+	/// set masses
+	command_queue.enqueueWriteBuffer(cl_m, CL_TRUE, 0, num_particles * sizeof(float), &initialMasses[0]);
+
+	/// set initial velocities
+	command_queue.enqueueWriteBuffer(cl_v, CL_TRUE, 0, num_particles * sizeof(float) * 2, &initialVelocities[0]);
+
+	/// set initial velocities
+	command_queue.enqueueWriteBuffer(cl_vbo_mem, CL_TRUE, 0, num_particles * sizeof(float) * 2, &initialPositions[0]);
+
+	pause = true;
+}
+
+
+
+void CMyApp::setQuit(const bool state)
+{
+	quit = state;
+}
+
+bool CMyApp::getQuit() const
+{
+	return quit;
+}
+
+CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-4), time_scaler(1.0), G(0.0001)
+{
+	auto randBetween = [](float min, float max) {return (rand() / float(RAND_MAX)) * (max - min) + min; };
+
+	// masses
+	initialMasses = std::vector<float>(num_particles, 1);
+
+	// velocities
+	initialVelocities = std::vector<float>(num_particles * 2, 0);
+
+	// initial positions
+	initialPositions = std::vector<float>(num_particles * 2, 0);
+
+	generate(initialMasses.begin(), initialMasses.end(), [&]() {return randBetween(.1, 2); });
+	generate(initialVelocities.begin(), initialVelocities.end(), [&]() {return randBetween(-1, 1); });
+	generate(initialPositions.begin(), initialPositions.end(), [&]() {return randBetween(-1, 1); });
 }
 
 CMyApp::~CMyApp(void)

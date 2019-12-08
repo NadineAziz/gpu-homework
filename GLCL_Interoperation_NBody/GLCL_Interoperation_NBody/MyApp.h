@@ -51,6 +51,11 @@ public:
 	void MouseUp(SDL_MouseButtonEvent&);
 	void MouseWheel(SDL_MouseWheelEvent&);
 	void Resize(int, int);
+
+	void resetSimulation();
+
+	void setQuit(const bool);
+	bool getQuit() const;
 protected:
 
 	// GL
@@ -68,13 +73,22 @@ protected:
 	cl::BufferGL cl_vbo_mem;
 	cl::Buffer cl_v, cl_m;
 
-	float delta_time;
 
-	const int num_particles = 25000;
-	const float particle_size = 0.01f;
+	int num_particles = 5000;
+	const float particle_size = 0.02f;
 	const bool bRing = true;
-	const bool bRandVelocities = true;
-	const float massiveObjectMass = 1;
+	const bool bRandVelocities = false;
+
+
+	std::vector<float> initialMasses;
+	std::vector<float> initialPositions;
+	std::vector<float> initialVelocities;
+
+	bool quit;
+	bool pause;
+	float delta_time;
+	float time_scaler;
+	float G;
 
 #pragma region GL functions
 

@@ -105,7 +105,7 @@ bool CMyApp::InitCL()
 		
 		// Create Mem Objs
 		cl_vbo_mem = cl::BufferGL(context, CL_MEM_WRITE_ONLY, vbo);
-		cl_v = cl::Buffer(context, CL_MEM_READ_WRITE, num_particles * sizeof(float) * 2);
+		cl_v = cl::Buffer(context, CL_MEM_READ_WRITE, num_particles * sizeof(float) * 3);
 		cl_m = cl::Buffer(context, CL_MEM_READ_WRITE, num_particles * sizeof(float));
 
 		///////////////////////////
@@ -187,7 +187,7 @@ void CMyApp::renderVBO( int vbolen )
 		m_program.SetUniform("M", M);
 
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glVertexPointer(2, GL_FLOAT, 0, 0);
+		glVertexPointer(3, GL_FLOAT, 0, 0);
 		glEnableClientState(GL_VERTEX_ARRAY);
 
 		glDrawArrays(GL_POINTS, 0, vbolen);
@@ -259,10 +259,10 @@ void CMyApp::resetSimulation()
 	command_queue.enqueueWriteBuffer(cl_m, CL_TRUE, 0, num_particles * sizeof(float), &initialMasses[0]);
 
 	/// set initial velocities
-	command_queue.enqueueWriteBuffer(cl_v, CL_TRUE, 0, num_particles * sizeof(float) * 2, &initialVelocities[0]);
+	command_queue.enqueueWriteBuffer(cl_v, CL_TRUE, 0, num_particles * sizeof(float) * 3, &initialVelocities[0]);
 
 	/// set initial velocities
-	command_queue.enqueueWriteBuffer(cl_vbo_mem, CL_TRUE, 0, num_particles * sizeof(float) * 2, &initialPositions[0]);
+	command_queue.enqueueWriteBuffer(cl_vbo_mem, CL_TRUE, 0, num_particles * sizeof(float) * 3, &initialPositions[0]);
 
 	pause = true;
 }
@@ -287,18 +287,24 @@ CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-4), time_scaler(1
 	initialMasses = std::vector<float>(num_particles, 1);
 
 	// velocities
-	initialVelocities = std::vector<float>(num_particles * 2, 0);
+	initialVelocities = std::vector<float>(num_particles * 3, 0);
 
 	// initial positions
-	initialPositions = std::vector<float>(num_particles * 2, 0);
+	initialPositions = std::vector<float>(num_particles * 3, 0);
 
 	generate(initialMasses.begin(), initialMasses.end(), [&]() {return randBetween(.1, 2); });
-	generate(initialVelocities.begin(), initialVelocities.end(), [&]() {return randBetween(-1, 1); });
-	generate(initialPositions.begin(), initialPositions.end(), [&]() {return randBetween(-1, 1); });
+	//generate(initialVelocities.begin(), initialVelocities.end(), [&]() {return randBetween(-1, 1); });
+	//generate(initialPositions.begin(), initialPositions.end(), [&]() {return randBetween(-1, 1); });
+	for (int i = 0; i < num_particles; i += 3)
+	{
+		initialPositions[i + 0] = randBetween(-1, 1);
+		initialPositions[i + 1] = randBetween(-1, 1);
+		initialPositions[i + 2] = randBetween(-1, 1) * 0;
+	}
 
 
 	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 	
 	glm::mat4 view = glm::mat4(1.0f);
 	// note that we're translating the scene in the reverse direction of where we want to move

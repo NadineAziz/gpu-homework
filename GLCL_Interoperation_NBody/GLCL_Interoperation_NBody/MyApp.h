@@ -82,7 +82,7 @@ protected:
 
 	int num_particles = 5000;
 	const float particle_size = 0.02f;
-	const bool bRing = true;
+	const bool bRing = false;
 	const bool bRandVelocities = false;
 
 
@@ -116,7 +116,7 @@ protected:
 
 		// bind the buffer
 		glBindBuffer(GL_ARRAY_BUFFER, vbo_buffer);
-		glBufferData(GL_ARRAY_BUFFER, vbolen*sizeof(float)*2, 0, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, vbolen*sizeof(float)*3, 0, GL_DYNAMIC_DRAW);
 		glBindBuffer(GL_ARRAY_BUFFER, 0); 
 
 		return vbo_buffer;

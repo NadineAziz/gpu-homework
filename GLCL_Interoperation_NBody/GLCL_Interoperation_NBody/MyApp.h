@@ -16,6 +16,12 @@
 #include <fstream>
 #include <sstream>
 
+
+
+// GLM
+#include <glm/glm.hpp>
+#include <glm/gtx/transform.hpp>
+
 #define __NO_STD_VECTOR
 #define __CL_ENABLE_EXCEPTIONS
 
@@ -89,6 +95,13 @@ protected:
 	float delta_time;
 	float time_scaler;
 	float G;
+
+
+	glm::mat4 M;
+
+	glm::mat4 model;
+	glm::mat4 view;
+	glm::mat4 projection;
 
 #pragma region GL functions
 

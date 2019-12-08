@@ -184,6 +184,8 @@ void CMyApp::renderVBO( int vbolen )
 		m_program.SetUniform("particle_size", particle_size);
 		m_program.SetTexture("tex0", 0, m_textureID);
 
+		m_program.SetUniform("M", M);
+
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 		glVertexPointer(2, GL_FLOAT, 0, 0);
 		glEnableClientState(GL_VERTEX_ARRAY);
@@ -293,6 +295,19 @@ CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-4), time_scaler(1
 	generate(initialMasses.begin(), initialMasses.end(), [&]() {return randBetween(.1, 2); });
 	generate(initialVelocities.begin(), initialVelocities.end(), [&]() {return randBetween(-1, 1); });
 	generate(initialPositions.begin(), initialPositions.end(), [&]() {return randBetween(-1, 1); });
+
+
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	
+	glm::mat4 view = glm::mat4(1.0f);
+	// note that we're translating the scene in the reverse direction of where we want to move
+	view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+
+	glm::mat4 projection;
+	projection = glm::perspective(glm::radians(45.0f), static_cast<float>(windowW) / windowH, 0.1f, 100.0f);
+
+	M = projection * view * model;
 }
 
 CMyApp::~CMyApp(void)

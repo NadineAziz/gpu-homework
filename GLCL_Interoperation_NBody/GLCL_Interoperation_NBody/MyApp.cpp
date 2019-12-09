@@ -6,6 +6,9 @@
 
 // 
 #include <algorithm>
+#include <iomanip>
+
+#define PRINT_XYZ(x,y,z) std::cout<<"\r" << std::setw(6) << x << "\t" << std::setw(6) << y << "\t" << std::setw(6) << z << std::flush;
 
 bool CMyApp::InitGL()
 {
@@ -217,12 +220,42 @@ void CMyApp::Render()
 
 void CMyApp::KeyboardDown(SDL_KeyboardEvent& key)
 {
+	float cameraSpeed = 0.05f;
+	glm::vec3 cameraRight = glm::normalize(glm::cross(cameraFront, cameraUp));
+
 	switch (key.keysym.sym)
 	{
 	case SDLK_ESCAPE:
 		quit = true;
 		break;
+
+	case SDLK_w:
+		cameraPos += cameraSpeed * cameraFront;
+		break;
+
+	case SDLK_s:
+		cameraPos -= cameraSpeed * cameraFront;
+		break;
+
+	case SDLK_a:
+		cameraPos -= cameraRight  * cameraSpeed;
+		break;
+
+	case SDLK_d:
+		cameraPos += cameraRight * cameraSpeed;
+		break;
+
+	case SDLK_e:
+		cameraPos += cameraSpeed * glm::normalize(glm::cross(cameraRight, cameraFront));
+		break;
+
+	case SDLK_q:
+		cameraPos -= cameraSpeed * glm::normalize(glm::cross(cameraRight, cameraFront));
+		break;
 	}
+
+	view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+	M = projection * view * model;
 }
 
 void CMyApp::KeyboardUp(SDL_KeyboardEvent& key)
@@ -231,6 +264,30 @@ void CMyApp::KeyboardUp(SDL_KeyboardEvent& key)
 
 void CMyApp::MouseMove(SDL_MouseMotionEvent& mouse)
 {
+	static float pitch = 0.0f;
+	static float yaw = -90.0f;
+	float sensitivity = 0.05;
+	yaw += mouse.xrel * sensitivity;
+	pitch -= mouse.yrel * sensitivity;
+
+	/*
+	if (pitch > 89.0f)
+		pitch = 89.0f;
+	if (pitch < -89.0f)
+		pitch = -89.0f;
+	*/
+
+	//std::cout << pitch << "\t" << yaw << std::endl;
+
+	glm::vec3 front;
+	front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch)); 
+	front.y = sin(glm::radians(pitch)); 
+	front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch)); 
+	cameraFront = glm::normalize(front);
+
+	view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+	M = projection * view * model;
+	
 }
 
 void CMyApp::MouseDown(SDL_MouseButtonEvent& mouse)
@@ -243,6 +300,10 @@ void CMyApp::MouseUp(SDL_MouseButtonEvent& mouse)
 
 void CMyApp::MouseWheel(SDL_MouseWheelEvent& wheel)
 {
+	static float fov = 45.0f;
+	fov += wheel.y;
+	projection = glm::perspective(glm::radians(fov), static_cast<float>(windowW) / windowH, 0.1f, 100.0f);
+	M = projection * view * model;
 }
 
 // a két paraméterbe az új ablakméret szélessége (_w) és magassága (_h) található
@@ -279,7 +340,7 @@ bool CMyApp::getQuit() const
 	return quit;
 }
 
-CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-3), time_scaler(1.0), G(0.0001)
+CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-4), time_scaler(1.0), G(0.0001)
 {
 	auto randBetween = [](float min, float max) {return (rand() / float(RAND_MAX)) * (max - min) + min; };
 
@@ -294,42 +355,21 @@ CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-3), time_scaler(1
 
 	generate(initialMasses.begin(), initialMasses.end(), [&]() {return randBetween(.1, 2); });
 	//generate(initialVelocities.begin(), initialVelocities.end(), [&]() {return randBetween(-1, 1); });
-	//generate(initialPositions.begin(), initialPositions.end(), [&]() {return randBetween(-1, 1); });
-
-	const int Nlat = 50;
-	const int Nlong = 100;
-	const float r = 0.5;
-	assert(Nlat * Nlong == num_particles);
-
-	int idx = 0;
-	for (int i = 0; i < Nlat; i++)
-	{
-		for (int j = 0; j < Nlong; j++)
-		{
-			float phi = i * (2 * M_PI) / Nlat;
-			float theta   = j * (2 * M_PI) / Nlong;
-
-			initialPositions[idx + 0] = r * sin(theta) * cos(phi);
-			initialPositions[idx + 1] = r * sin(theta) * sin(phi);
-			initialPositions[idx + 2] = r * cos(theta);
-
-			idx -=- 3;
-		}
-	}
+	generate(initialPositions.begin(), initialPositions.end(), [&]() {return randBetween(-1, 1); });
 
 
-
-	glm::mat4 model = glm::mat4(1.0f);
-	//model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	
-	glm::mat4 view = glm::mat4(1.0f);
-	// note that we're translating the scene in the reverse direction of where we want to move
-	view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
-
-	glm::mat4 projection;
+	model = glm::mat4(1.0f);
+	view = glm::mat4(1.0f);
 	projection = glm::perspective(glm::radians(45.0f), static_cast<float>(windowW) / windowH, 0.1f, 100.0f);
 
+	cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+	cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+	cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+	view = glm::lookAt(cameraPos, cameraPos+ cameraFront, cameraUp);
+
 	M = projection * view * model;
+
+	std::cout.precision(3);
 }
 
 CMyApp::~CMyApp(void)

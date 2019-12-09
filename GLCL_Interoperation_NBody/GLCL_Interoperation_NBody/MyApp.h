@@ -103,6 +103,10 @@ protected:
 	glm::mat4 view;
 	glm::mat4 projection;
 
+	glm::vec3 cameraPos;
+	glm::vec3 cameraFront;
+	glm::vec3 cameraUp;
+
 #pragma region GL functions
 
 	gShaderProgram	m_program;

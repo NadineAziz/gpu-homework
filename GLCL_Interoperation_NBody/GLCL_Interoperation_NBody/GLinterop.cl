@@ -25,6 +25,7 @@ __kernel void update(__global float3 *v, __global float3 *p, __global float* m, 
     }
 
     float3 v_ = v[gid] + dt * a_gid; //"" v = a * t ""
+	v_.z = 0.0f;
 
 //    barrier(CLK_GLOBAL_MEM_FENCE);
 

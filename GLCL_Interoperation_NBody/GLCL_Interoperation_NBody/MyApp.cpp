@@ -6,6 +6,9 @@
 
 // 
 #include <algorithm>
+#include <iomanip>
+
+#define PRINT_XYZ(x,y,z) std::cout<<"\r" << std::setw(6) << x << "\t" << std::setw(6) << y << "\t" << std::setw(6) << z << std::flush;
 
 bool CMyApp::InitGL()
 {
@@ -105,7 +108,7 @@ bool CMyApp::InitCL()
 		
 		// Create Mem Objs
 		cl_vbo_mem = cl::BufferGL(context, CL_MEM_WRITE_ONLY, vbo);
-		cl_v = cl::Buffer(context, CL_MEM_READ_WRITE, num_particles * sizeof(float) * 2);
+		cl_v = cl::Buffer(context, CL_MEM_READ_WRITE, num_particles * sizeof(float) * 3);
 		cl_m = cl::Buffer(context, CL_MEM_READ_WRITE, num_particles * sizeof(float));
 
 		///////////////////////////
@@ -184,8 +187,10 @@ void CMyApp::renderVBO( int vbolen )
 		m_program.SetUniform("particle_size", particle_size);
 		m_program.SetTexture("tex0", 0, m_textureID);
 
+		m_program.SetUniform("M", M);
+
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glVertexPointer(2, GL_FLOAT, 0, 0);
+		glVertexPointer(3, GL_FLOAT, 0, 0);
 		glEnableClientState(GL_VERTEX_ARRAY);
 
 		glDrawArrays(GL_POINTS, 0, vbolen);
@@ -215,12 +220,42 @@ void CMyApp::Render()
 
 void CMyApp::KeyboardDown(SDL_KeyboardEvent& key)
 {
+	float cameraSpeed = 0.05f;
+	glm::vec3 cameraRight = glm::normalize(glm::cross(cameraFront, cameraUp));
+
 	switch (key.keysym.sym)
 	{
 	case SDLK_ESCAPE:
 		quit = true;
 		break;
+
+	case SDLK_w:
+		cameraPos += cameraSpeed * cameraFront;
+		break;
+
+	case SDLK_s:
+		cameraPos -= cameraSpeed * cameraFront;
+		break;
+
+	case SDLK_a:
+		cameraPos -= cameraRight  * cameraSpeed;
+		break;
+
+	case SDLK_d:
+		cameraPos += cameraRight * cameraSpeed;
+		break;
+
+	case SDLK_e:
+		cameraPos += cameraSpeed * glm::normalize(glm::cross(cameraRight, cameraFront));
+		break;
+
+	case SDLK_q:
+		cameraPos -= cameraSpeed * glm::normalize(glm::cross(cameraRight, cameraFront));
+		break;
 	}
+
+	view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+	M = projection * view * model;
 }
 
 void CMyApp::KeyboardUp(SDL_KeyboardEvent& key)
@@ -229,6 +264,30 @@ void CMyApp::KeyboardUp(SDL_KeyboardEvent& key)
 
 void CMyApp::MouseMove(SDL_MouseMotionEvent& mouse)
 {
+	static float pitch = 0.0f;
+	static float yaw = -90.0f;
+	float sensitivity = 0.05;
+	yaw += mouse.xrel * sensitivity;
+	pitch -= mouse.yrel * sensitivity;
+
+	/*
+	if (pitch > 89.0f)
+		pitch = 89.0f;
+	if (pitch < -89.0f)
+		pitch = -89.0f;
+	*/
+
+	//std::cout << pitch << "\t" << yaw << std::endl;
+
+	glm::vec3 front;
+	front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch)); 
+	front.y = sin(glm::radians(pitch)); 
+	front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch)); 
+	cameraFront = glm::normalize(front);
+
+	view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+	M = projection * view * model;
+	
 }
 
 void CMyApp::MouseDown(SDL_MouseButtonEvent& mouse)
@@ -241,6 +300,10 @@ void CMyApp::MouseUp(SDL_MouseButtonEvent& mouse)
 
 void CMyApp::MouseWheel(SDL_MouseWheelEvent& wheel)
 {
+	static float fov = 45.0f;
+	fov += wheel.y;
+	projection = glm::perspective(glm::radians(fov), static_cast<float>(windowW) / windowH, 0.1f, 100.0f);
+	M = projection * view * model;
 }
 
 // a két paraméterbe az új ablakméret szélessége (_w) és magassága (_h) található
@@ -257,10 +320,10 @@ void CMyApp::resetSimulation()
 	command_queue.enqueueWriteBuffer(cl_m, CL_TRUE, 0, num_particles * sizeof(float), &initialMasses[0]);
 
 	/// set initial velocities
-	command_queue.enqueueWriteBuffer(cl_v, CL_TRUE, 0, num_particles * sizeof(float) * 2, &initialVelocities[0]);
+	command_queue.enqueueWriteBuffer(cl_v, CL_TRUE, 0, num_particles * sizeof(float) * 3, &initialVelocities[0]);
 
 	/// set initial velocities
-	command_queue.enqueueWriteBuffer(cl_vbo_mem, CL_TRUE, 0, num_particles * sizeof(float) * 2, &initialPositions[0]);
+	command_queue.enqueueWriteBuffer(cl_vbo_mem, CL_TRUE, 0, num_particles * sizeof(float) * 3, &initialPositions[0]);
 
 	pause = true;
 }
@@ -285,14 +348,28 @@ CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-4), time_scaler(1
 	initialMasses = std::vector<float>(num_particles, 1);
 
 	// velocities
-	initialVelocities = std::vector<float>(num_particles * 2, 0);
+	initialVelocities = std::vector<float>(num_particles * 3, 0);
 
 	// initial positions
-	initialPositions = std::vector<float>(num_particles * 2, 0);
+	initialPositions = std::vector<float>(num_particles * 3, 0);
 
 	generate(initialMasses.begin(), initialMasses.end(), [&]() {return randBetween(.1, 2); });
-	generate(initialVelocities.begin(), initialVelocities.end(), [&]() {return randBetween(-1, 1); });
+	//generate(initialVelocities.begin(), initialVelocities.end(), [&]() {return randBetween(-1, 1); });
 	generate(initialPositions.begin(), initialPositions.end(), [&]() {return randBetween(-1, 1); });
+
+
+	model = glm::mat4(1.0f);
+	view = glm::mat4(1.0f);
+	projection = glm::perspective(glm::radians(45.0f), static_cast<float>(windowW) / windowH, 0.1f, 100.0f);
+
+	cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+	cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+	cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+	view = glm::lookAt(cameraPos, cameraPos+ cameraFront, cameraUp);
+
+	M = projection * view * model;
+
+	std::cout.precision(3);
 }
 
 CMyApp::~CMyApp(void)

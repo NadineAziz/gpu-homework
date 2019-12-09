@@ -16,6 +16,12 @@
 #include <fstream>
 #include <sstream>
 
+
+
+// GLM
+#include <glm/glm.hpp>
+#include <glm/gtx/transform.hpp>
+
 #define __NO_STD_VECTOR
 #define __CL_ENABLE_EXCEPTIONS
 
@@ -76,7 +82,7 @@ protected:
 
 	int num_particles = 5000;
 	const float particle_size = 0.02f;
-	const bool bRing = true;
+	const bool bRing = false;
 	const bool bRandVelocities = false;
 
 
@@ -89,6 +95,17 @@ protected:
 	float delta_time;
 	float time_scaler;
 	float G;
+
+
+	glm::mat4 M;
+
+	glm::mat4 model;
+	glm::mat4 view;
+	glm::mat4 projection;
+
+	glm::vec3 cameraPos;
+	glm::vec3 cameraFront;
+	glm::vec3 cameraUp;
 
 #pragma region GL functions
 
@@ -103,7 +120,7 @@ protected:
 
 		// bind the buffer
 		glBindBuffer(GL_ARRAY_BUFFER, vbo_buffer);
-		glBufferData(GL_ARRAY_BUFFER, vbolen*sizeof(float)*2, 0, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, vbolen*sizeof(float)*3, 0, GL_DYNAMIC_DRAW);
 		glBindBuffer(GL_ARRAY_BUFFER, 0); 
 
 		return vbo_buffer;

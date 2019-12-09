@@ -59,8 +59,8 @@ int main( int argc, char* args[] )
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE,          24);
 
 	// antialiasing - ha kell
-	//SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS,  1);
-	//SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,  4);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS,  1);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,  4);
 
 	// hozzuk létre az ablakunkat
 	SDL_Window *win = 0;
@@ -91,7 +91,7 @@ int main( int argc, char* args[] )
     }	
 
 	// megjelenítés: várjuk be a vsync-et
-	SDL_GL_SetSwapInterval(0);
+	SDL_GL_SetSwapInterval(1);
 
 	// indítsuk el a GLEW-t
 	GLenum error = glewInit();
@@ -138,7 +138,10 @@ int main( int argc, char* args[] )
 	}
 	
 	gTimer nanoTimer;
-
+	
+	SDL_WarpMouseInWindow(win, 400, 400);
+	SDL_SetRelativeMouseMode(SDL_TRUE);
+	
 	while (!app.getQuit())
 	{
 		// amíg van feldolgozandó üzenet dolgozzuk fel mindet:

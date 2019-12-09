@@ -226,7 +226,6 @@ void CMyApp::KeyboardDown(SDL_KeyboardEvent& key)
 	float cameraSpeed = 0.05f;
 	glm::vec3 cameraRight = glm::normalize(glm::cross(cameraFront, cameraUp));
 
-	// motion
 	switch (key.keysym.sym)
 	{
 	case SDLK_w:
@@ -286,19 +285,25 @@ void CMyApp::KeyboardDown(SDL_KeyboardEvent& key)
 		break;
 
 	case SDLK_F2:
-		init_pos++;
-		if (init_pos > INIT_POS_SPHERICAL)
+		if (++init_pos > INIT_POS_SPHERICAL)
 			init_pos = INIT_POS_UNIFORM;
-		generateParticles();
+		initPositions();
 		resetSimulation();
 		printMenu();
 		break;
 
 	case SDLK_F3:
-		init_vel++;
-		if (init_vel > INIT_VEL_ZERO)
+		if (++init_vel > INIT_VEL_ZERO)
 			init_vel = INIT_VEL_UNIFORM;
-		generateParticles();
+		initVelocities();
+		resetSimulation();
+		printMenu();
+		break;
+
+	case SDLK_F4:
+		if (++init_mas > INIT_MAS_CONSTATNS)
+			init_mas = INIT_MAS_UNIFORM;
+		initMasses();
 		resetSimulation();
 		printMenu();
 		break;
@@ -376,11 +381,10 @@ void CMyApp::resetSimulation()
 	pause = true;
 }
 
-void CMyApp::generateParticles()
+float randBetween(float min, float max) {return (rand() / float(RAND_MAX)) * (max - min) + min;}
+
+void CMyApp::initPositions()
 {
-	auto randBetween = [](float min, float max) {return (rand() / float(RAND_MAX)) * (max - min) + min; };
-	
-	generate(initialMasses.begin(), initialMasses.end(), [&]() {return randBetween(.1, 2); });
 	float rMax = 1.0;
 	float zMax = 1.0;
 
@@ -391,7 +395,7 @@ void CMyApp::generateParticles()
 		break;
 
 	case INIT_POS_CYLINDRICAL:
-		
+
 		for (int i = 0; i < num_particles * 3; i += 3)
 		{
 			float r = rMax * randBetween(0.5, 1.0);
@@ -418,7 +422,10 @@ void CMyApp::generateParticles()
 		}
 		break;
 	}
+}
 
+void CMyApp::initVelocities()
+{
 	switch (init_vel)
 	{
 	case INIT_VEL_ZERO:
@@ -427,6 +434,23 @@ void CMyApp::generateParticles()
 
 	case INIT_VEL_UNIFORM:
 		generate(initialVelocities.begin(), initialVelocities.end(), [&]() {return randBetween(-1, 1); });
+		break;
+	}
+}
+
+void CMyApp::initMasses()
+{
+
+	//auto randBetween = [](float min, float max) {return (rand() / float(RAND_MAX)) * (max - min) + min; };
+
+	switch (init_mas)
+	{
+	case INIT_MAS_UNIFORM:
+		generate(initialVelocities.begin(), initialVelocities.end(), [&]() {return randBetween(-1, 1); });
+		break;
+
+	case INIT_MAS_CONSTATNS:
+		initialVelocities = std::vector<float>(num_particles * 3, 1.0);
 		break;
 	}
 }
@@ -484,6 +508,19 @@ void CMyApp::printMenu()
 		printedMenu += "stationary\n";
 		break;
 	}
+
+	printedMenu += "mass distribution: ";
+	switch (init_mas)
+	{
+	case INIT_MAS_UNIFORM:
+		printedMenu += "uniform\n";
+		break;
+
+	case INIT_MAS_CONSTATNS:
+		printedMenu += "constant (" + std::to_string(initialMasses[0]) + ")\n";
+		break;
+	}
+
 	printedMenu += "----------------------------------\n";
 
 	if (pause)
@@ -495,12 +532,13 @@ void CMyApp::printMenu()
 	std::cout<<"\r" << printedMenu <<std::flush;
 }
 
-CMyApp::CMyApp(void):quit(false), pause(false), delta_time(1.0E-3), time_scaler(1.0), G(0.0001), num_particles(5000)
+CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-3), time_scaler(1.0), G(0.0001), num_particles(5000)
 {
 	// particles
 
 	init_pos = INIT_POS_UNIFORM;
 	init_vel = INIT_VEL_UNIFORM;
+	init_mas = INIT_MAS_CONSTATNS;
 
 	// masses
 	initialMasses = std::vector<float>(num_particles, 1);
@@ -509,7 +547,9 @@ CMyApp::CMyApp(void):quit(false), pause(false), delta_time(1.0E-3), time_scaler(
 	// initial positions
 	initialPositions = std::vector<float>(num_particles * 3, 0);
 
-	generateParticles();
+	initMasses();
+	initPositions();
+	initVelocities();
 
 
 	// view
@@ -532,8 +572,9 @@ CMyApp::CMyApp(void):quit(false), pause(false), delta_time(1.0E-3), time_scaler(
 	menu << "P - Pause" << std::endl;
 	menu << "Esc - Quit" << std::endl;
 	menu << "F1 - Reset" << std::endl;
-	menu << "F2 - Change position initialization" << std::endl;
-	menu << "F3 - Change velocity initialization" << std::endl;
+	menu << "F2 - Change position distribution" << std::endl;
+	menu << "F3 - Change velocity distribution" << std::endl;
+	menu << "F4 - Change mass distribution" << std::endl;
 
 	printMenu();
 }

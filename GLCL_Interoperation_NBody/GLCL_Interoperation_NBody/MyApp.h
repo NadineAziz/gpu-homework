@@ -36,14 +36,23 @@
 #include <GL/glx.h>
 #endif
 
-#define INIT_POS_UNIFORM 0
+///////////////////////////////////////////////////
+////    defines for particle initialization    ////
+///////////////////////////////////////////////////
+
+// position
+#define INIT_POS_UNIFORM     0
 #define INIT_POS_CYLINDRICAL 1
-#define INIT_POS_SPHERICAL 2
+#define INIT_POS_SPHERICAL   2
 
+// velocity
+#define INIT_VEL_UNIFORM     0
+#define INIT_VEL_ZERO        1
 
-#define INIT_VEL_UNIFORM 0
-#define INIT_VEL_ZERO    1
-
+//mass
+#define INIT_MAS_UNIFORM     0
+#define INIT_MAS_CONSTATNS   1
+///////////////////////////////////////////////////
 
 class CMyApp
 {
@@ -68,7 +77,9 @@ public:
 	void Resize(int, int);
 
 	void resetSimulation();
-	void generateParticles();
+	void initPositions();
+	void initVelocities();
+	void initMasses();
 
 	void setQuit(const bool);
 	bool getQuit() const;
@@ -122,6 +133,7 @@ protected:
 	std::stringstream menu;
 	int init_pos;
 	int init_vel;
+	int init_mas;
 
 #pragma region GL functions
 

@@ -547,8 +547,8 @@ CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-3), time_scaler(1
 	// initial positions
 	initialPositions = std::vector<float>(num_particles * 3, 0);
 
-	initMasses();
-	initPositions();
+	    initMasses();
+	 initPositions();
 	initVelocities();
 
 

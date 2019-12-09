@@ -57,7 +57,7 @@
 class CMyApp
 {
 public:
-	CMyApp(void);
+	CMyApp(SDL_Window*);
 	~CMyApp(void);
 
 	bool InitGL();
@@ -85,6 +85,7 @@ public:
 	bool getQuit() const;
 
 	void printMenu();
+
 protected:
 
 	// GL
@@ -103,10 +104,8 @@ protected:
 	cl::Buffer cl_v, cl_m;
 
 
-	int num_particles;
+	unsigned int num_particles;
 	const float particle_size = 0.02f;
-	const bool bRing = false;
-	const bool bRandVelocities = false;
 
 
 	std::vector<float> initialMasses;
@@ -130,6 +129,8 @@ protected:
 	glm::vec3 cameraFront;
 	glm::vec3 cameraUp;
 
+	SDL_Window* win;
+	std::string extraInfo;
 	std::stringstream menu;
 	int init_pos;
 	int init_vel;

@@ -289,7 +289,15 @@ void CMyApp::KeyboardDown(SDL_KeyboardEvent& key)
 		init_pos++;
 		if (init_pos > INIT_POS_SPHERICAL)
 			init_pos = INIT_POS_UNIFORM;
+		generateParticles();
+		resetSimulation();
+		printMenu();
+		break;
 
+	case SDLK_F3:
+		init_vel++;
+		if (init_vel > INIT_VEL_ZERO)
+			init_vel = INIT_VEL_UNIFORM;
 		generateParticles();
 		resetSimulation();
 		printMenu();
@@ -373,8 +381,6 @@ void CMyApp::generateParticles()
 	auto randBetween = [](float min, float max) {return (rand() / float(RAND_MAX)) * (max - min) + min; };
 	
 	generate(initialMasses.begin(), initialMasses.end(), [&]() {return randBetween(.1, 2); });
-	generate(initialVelocities.begin(), initialVelocities.end(), [&]() {return randBetween(-1, 1); });
-
 	float rMax = 1.0;
 	float zMax = 1.0;
 
@@ -412,6 +418,17 @@ void CMyApp::generateParticles()
 		}
 		break;
 	}
+
+	switch (init_vel)
+	{
+	case INIT_VEL_ZERO:
+		initialVelocities = std::vector<float>(num_particles * 3, 0.0);
+		break;
+
+	case INIT_VEL_UNIFORM:
+		generate(initialVelocities.begin(), initialVelocities.end(), [&]() {return randBetween(-1, 1); });
+		break;
+	}
 }
 
 
@@ -440,7 +457,7 @@ void CMyApp::printMenu()
 	std::string printedMenu = menu.str();
 	printedMenu += "----------------------------------\n";
 
-	printedMenu += "Initialization: ";
+	printedMenu += "position distribution: ";
 	switch (init_pos)
 	{
 	case INIT_POS_UNIFORM:
@@ -456,6 +473,17 @@ void CMyApp::printMenu()
 		break;
 	}
 
+	printedMenu += "position distribution: ";
+	switch (init_vel)
+	{
+	case INIT_VEL_UNIFORM:
+		printedMenu += "uniform\n";
+		break;
+
+	case INIT_VEL_ZERO:
+		printedMenu += "stationary\n";
+		break;
+	}
 	printedMenu += "----------------------------------\n";
 
 	if (pause)
@@ -471,7 +499,8 @@ CMyApp::CMyApp(void):quit(false), pause(false), delta_time(1.0E-3), time_scaler(
 {
 	// particles
 
-	init_pos = INIT_POS_CYLINDRICAL;
+	init_pos = INIT_POS_UNIFORM;
+	init_vel = INIT_VEL_UNIFORM;
 
 	// masses
 	initialMasses = std::vector<float>(num_particles, 1);
@@ -503,7 +532,8 @@ CMyApp::CMyApp(void):quit(false), pause(false), delta_time(1.0E-3), time_scaler(
 	menu << "P - Pause" << std::endl;
 	menu << "Esc - Quit" << std::endl;
 	menu << "F1 - Reset" << std::endl;
-	menu << "F2 - Change initialization" << std::endl;
+	menu << "F2 - Change position initialization" << std::endl;
+	menu << "F3 - Change velocity initialization" << std::endl;
 
 	printMenu();
 }

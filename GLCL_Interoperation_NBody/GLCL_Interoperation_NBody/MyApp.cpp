@@ -10,6 +10,21 @@
 
 #define PRINT_XYZ(x,y,z) std::cout<<"\r" << std::setw(6) << x << "\t" << std::setw(6) << y << "\t" << std::setw(6) << z << std::flush;
 
+void clearConsole()
+{
+#ifdef _WIN32
+	system("cls");
+#elif defined(unix) || defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
+	system("clear");
+	//add some other OSes here if needed
+#else
+#error "OS not supported."
+	//you can also throw an exception indicating the function can't be used
+#endif
+}
+
+float randBetween(float min, float max) { return (rand() / float(RAND_MAX)) * (max - min) + min; }
+
 bool CMyApp::InitGL()
 {
 	glEnable(GL_BLEND);
@@ -307,6 +322,46 @@ void CMyApp::KeyboardDown(SDL_KeyboardEvent& key)
 		resetSimulation();
 		printMenu();
 		break;
+
+	case SDLK_F5:
+		clearConsole();
+		SDL_SetRelativeMouseMode(SDL_FALSE);
+		std::cout << "Click here and enter the desired value: ";
+		unsigned int temp;
+		std::cin >> temp;
+		if(temp != 0)
+			num_particles = temp;
+
+		initMasses();
+		initPositions();
+		initVelocities();
+
+		SDL_RaiseWindow(win);
+		SDL_WarpMouseInWindow(win, 400, 400);
+		SDL_SetRelativeMouseMode(SDL_TRUE);
+		printMenu();
+		break;
+
+	case SDLK_F6:
+		clearConsole();
+		SDL_SetRelativeMouseMode(SDL_FALSE);
+		std::cout << "Click here and enter the desired value: ";
+		float temp1;
+		std::cin >> temp1;
+		if (temp1 > 0.0)
+			G = temp1;
+
+		if (G > 0.1)
+			extraInfo = "[Warning] Too large values may cause undesired behavior!\n";
+		else
+			extraInfo = "";
+
+		kernel_update.setArg(4, G);
+		SDL_RaiseWindow(win);
+		SDL_WarpMouseInWindow(win, 400, 400);
+		SDL_SetRelativeMouseMode(SDL_TRUE);
+		printMenu();
+		break;
 	}
 	
 }
@@ -380,8 +435,6 @@ void CMyApp::resetSimulation()
 
 	pause = true;
 }
-
-float randBetween(float min, float max) {return (rand() / float(RAND_MAX)) * (max - min) + min;}
 
 void CMyApp::initPositions()
 {
@@ -469,15 +522,7 @@ bool CMyApp::getQuit() const
 
 void CMyApp::printMenu()
 {
-	#ifdef _WIN32
-		system("cls");
-	#elif defined(unix) || defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
-		system("clear");
-		//add some other OSes here if needed
-	#else
-	#error "OS not supported."
-		//you can also throw an exception indicating the function can't be used
-	#endif
+	clearConsole();
 	std::string printedMenu = menu.str();
 	printedMenu += "----------------------------------\n";
 
@@ -513,13 +558,16 @@ void CMyApp::printMenu()
 	switch (init_mas)
 	{
 	case INIT_MAS_UNIFORM:
-		printedMenu += "uniform\n";
+		printedMenu += "    uniform\n";
 		break;
 
 	case INIT_MAS_CONSTATNS:
-		printedMenu += "constant (" + std::to_string(initialMasses[0]) + ")\n";
+		printedMenu += "    constant (" + std::to_string(initialMasses[0]) + ")\n";
 		break;
 	}
+
+	printedMenu += "number of particles:   " + std::to_string(num_particles) + "\n";
+	printedMenu += "G:                     " + std::to_string(G) + "\n";
 
 	printedMenu += "----------------------------------\n";
 
@@ -529,10 +577,11 @@ void CMyApp::printMenu()
 		printedMenu += "Simulation running\n";
 
 
+	printedMenu += extraInfo;
 	std::cout<<"\r" << printedMenu <<std::flush;
 }
 
-CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-3), time_scaler(1.0), G(0.0001), num_particles(5000)
+CMyApp::CMyApp(SDL_Window* window):win(window), extraInfo(), quit(false), pause(true), delta_time(1.0E-3), time_scaler(1.0), G(0.0001), num_particles(5000)
 {
 	// particles
 
@@ -575,6 +624,8 @@ CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-3), time_scaler(1
 	menu << "F2 - Change position distribution" << std::endl;
 	menu << "F3 - Change velocity distribution" << std::endl;
 	menu << "F4 - Change mass distribution" << std::endl;
+	menu << "F5 - Change the number of particles" << std::endl;
+	menu << "F6 - Change G" << std::endl;
 
 	printMenu();
 }

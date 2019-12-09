@@ -11,6 +11,7 @@
 #include "MyApp.h"
 #include "gTimer.h"
 
+
 void exitProgram()
 {
 	SDL_Quit();
@@ -63,7 +64,7 @@ int main( int argc, char* args[] )
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,  4);
 
 	// hozzuk létre az ablakunkat
-	SDL_Window *win = 0;
+	SDL_Window *win = nullptr;
     win = SDL_CreateWindow( "Hello SDL&OpenGL!",		// az ablak fejléce
 							700,						// az ablak bal-felsõ sarkának kezdeti X koordinátája
 							100,						// az ablak bal-felsõ sarkának kezdeti Y koordinátája
@@ -129,7 +130,7 @@ int main( int argc, char* args[] )
 	SDL_Event ev;
 	
 	// alkalmazas példánya
-	CMyApp app;
+	CMyApp app(win);
 	if (!app.InitGL() || !app.InitCL())
 	{
 		SDL_DestroyWindow(win);

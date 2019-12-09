@@ -14,8 +14,8 @@
 // CL
 #include <iostream>
 #include <fstream>
+#include <string>
 #include <sstream>
-
 
 
 // GLM
@@ -35,6 +35,15 @@
 #ifdef __GNUC__
 #include <GL/glx.h>
 #endif
+
+#define INIT_POS_UNIFORM 0
+#define INIT_POS_CYLINDRICAL 1
+#define INIT_POS_SPHERICAL 2
+
+
+#define INIT_VEL_UNIFORM 0
+#define INIT_VEL_ZERO    1
+
 
 class CMyApp
 {
@@ -59,9 +68,12 @@ public:
 	void Resize(int, int);
 
 	void resetSimulation();
+	void generateParticles();
 
 	void setQuit(const bool);
 	bool getQuit() const;
+
+	void printMenu();
 protected:
 
 	// GL
@@ -80,7 +92,7 @@ protected:
 	cl::Buffer cl_v, cl_m;
 
 
-	int num_particles = 5000;
+	int num_particles;
 	const float particle_size = 0.02f;
 	const bool bRing = false;
 	const bool bRandVelocities = false;
@@ -106,6 +118,10 @@ protected:
 	glm::vec3 cameraPos;
 	glm::vec3 cameraFront;
 	glm::vec3 cameraUp;
+
+	std::stringstream menu;
+	int init_pos;
+	int init_vel;
 
 #pragma region GL functions
 

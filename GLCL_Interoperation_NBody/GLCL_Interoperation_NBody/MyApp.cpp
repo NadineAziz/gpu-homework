@@ -148,30 +148,33 @@ void CMyApp::Clean()
 
 void CMyApp::Update()
 {
-	kernel_update.setArg(3, delta_time * time_scaler * 2);
+	if (!pause)
+	{
+		kernel_update.setArg(3, delta_time * time_scaler * 2);
+		// CL
+		try {
+			cl::vector<cl::Memory> acquirable;
+			acquirable.push_back(cl_vbo_mem);
 
-	// CL
-	try {
-		cl::vector<cl::Memory> acquirable;
-		acquirable.push_back(cl_vbo_mem);
+			// Acquire GL Objects
+			command_queue.enqueueAcquireGLObjects(&acquirable);
+			{
+				cl::NDRange global(num_particles);
 
-		// Acquire GL Objects
-		command_queue.enqueueAcquireGLObjects(&acquirable);
-		{
-			cl::NDRange global(num_particles);
+				// interaction & integration
+				command_queue.enqueueNDRangeKernel(kernel_update, cl::NullRange, global, cl::NullRange);
 
-			// interaction & integration
-			command_queue.enqueueNDRangeKernel(kernel_update, cl::NullRange, global, cl::NullRange);
+				// Wait for all computations to finish
+				command_queue.finish();
+			}
+			// Release GL Objects
+			command_queue.enqueueReleaseGLObjects(&acquirable);
 
-			// Wait for all computations to finish
-			command_queue.finish();
 		}
-		// Release GL Objects
-		command_queue.enqueueReleaseGLObjects(&acquirable);
-
-	} catch (cl::Error error) {
-		std::cout << error.what() << "(" << oclErrorString(error.err()) << ")" << std::endl;
-		exit(1);
+		catch (cl::Error error) {
+			std::cout << error.what() << "(" << oclErrorString(error.err()) << ")" << std::endl;
+			exit(1);
+		}
 	}
 } 
 
@@ -223,39 +226,76 @@ void CMyApp::KeyboardDown(SDL_KeyboardEvent& key)
 	float cameraSpeed = 0.05f;
 	glm::vec3 cameraRight = glm::normalize(glm::cross(cameraFront, cameraUp));
 
+	// motion
 	switch (key.keysym.sym)
 	{
-	case SDLK_ESCAPE:
-		quit = true;
-		break;
-
 	case SDLK_w:
 		cameraPos += cameraSpeed * cameraFront;
+		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+		M = projection * view * model;
 		break;
 
 	case SDLK_s:
 		cameraPos -= cameraSpeed * cameraFront;
+		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+		M = projection * view * model;
 		break;
 
 	case SDLK_a:
-		cameraPos -= cameraRight  * cameraSpeed;
+		cameraPos -= cameraRight * cameraSpeed;
+		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+		M = projection * view * model;
 		break;
 
 	case SDLK_d:
 		cameraPos += cameraRight * cameraSpeed;
+		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+		M = projection * view * model;
 		break;
 
 	case SDLK_e:
 		cameraPos += cameraSpeed * glm::normalize(glm::cross(cameraRight, cameraFront));
+		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+		M = projection * view * model;
 		break;
 
 	case SDLK_q:
 		cameraPos -= cameraSpeed * glm::normalize(glm::cross(cameraRight, cameraFront));
+		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+		M = projection * view * model;
+		break;
+
+	case SDLK_ESCAPE:
+		quit = true;
+		printMenu();
+		break;
+
+	case SDLK_r:
+		pause = false;
+		printMenu();
+		break;
+
+	case SDLK_p:
+		pause = true;
+		printMenu();
+		break;
+
+	case SDLK_F1:
+		resetSimulation();
+		printMenu();
+		break;
+
+	case SDLK_F2:
+		init_pos++;
+		if (init_pos > INIT_POS_SPHERICAL)
+			init_pos = INIT_POS_UNIFORM;
+
+		generateParticles();
+		resetSimulation();
+		printMenu();
 		break;
 	}
-
-	view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-	M = projection * view * model;
+	
 }
 
 void CMyApp::KeyboardUp(SDL_KeyboardEvent& key)
@@ -328,6 +368,52 @@ void CMyApp::resetSimulation()
 	pause = true;
 }
 
+void CMyApp::generateParticles()
+{
+	auto randBetween = [](float min, float max) {return (rand() / float(RAND_MAX)) * (max - min) + min; };
+	
+	generate(initialMasses.begin(), initialMasses.end(), [&]() {return randBetween(.1, 2); });
+	generate(initialVelocities.begin(), initialVelocities.end(), [&]() {return randBetween(-1, 1); });
+
+	float rMax = 1.0;
+	float zMax = 1.0;
+
+	switch (init_pos)
+	{
+	case INIT_POS_UNIFORM:
+		generate(initialPositions.begin(), initialPositions.end(), [&]() {return randBetween(-1, 1); });
+		break;
+
+	case INIT_POS_CYLINDRICAL:
+		
+		for (int i = 0; i < num_particles * 3; i += 3)
+		{
+			float r = rMax * randBetween(0.5, 1.0);
+			float z = zMax * randBetween(-0.5, 0.5);
+			float theta = randBetween(0, 2 * M_PI);
+
+
+			initialPositions[i + 0] = r * cos(theta);
+			initialPositions[i + 1] = r * sin(theta);
+			initialPositions[i + 2] = z;
+		}
+		break;
+
+	case INIT_POS_SPHERICAL:
+		for (int i = 0; i < num_particles * 3; i += 3)
+		{
+			float     r = rMax * randBetween(1.0, 1.0);
+			float theta = randBetween(0, 2 * M_PI);
+			float   phi = randBetween(0, 2 * M_PI);
+
+			initialPositions[i + 0] = r * cos(theta) * sin(phi);
+			initialPositions[i + 1] = r * sin(theta) * sin(phi);
+			initialPositions[i + 2] = r * cos(phi);
+		}
+		break;
+	}
+}
+
 
 
 void CMyApp::setQuit(const bool state)
@@ -340,24 +426,64 @@ bool CMyApp::getQuit() const
 	return quit;
 }
 
-CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-4), time_scaler(1.0), G(0.0001)
+void CMyApp::printMenu()
 {
-	auto randBetween = [](float min, float max) {return (rand() / float(RAND_MAX)) * (max - min) + min; };
+	#ifdef _WIN32
+		system("cls");
+	#elif defined(unix) || defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
+		system("clear");
+		//add some other OSes here if needed
+	#else
+	#error "OS not supported."
+		//you can also throw an exception indicating the function can't be used
+	#endif
+	std::string printedMenu = menu.str();
+	printedMenu += "----------------------------------\n";
+
+	printedMenu += "Initialization: ";
+	switch (init_pos)
+	{
+	case INIT_POS_UNIFORM:
+		printedMenu += "uniform\n";
+		break;
+
+	case INIT_POS_CYLINDRICAL:
+		printedMenu += "cylindrical\n";
+		break;
+
+	case INIT_POS_SPHERICAL:
+		printedMenu += "spherical\n";
+		break;
+	}
+
+	printedMenu += "----------------------------------\n";
+
+	if (pause)
+		printedMenu += "Simulation paused\n";
+	else
+		printedMenu += "Simulation running\n";
+
+
+	std::cout<<"\r" << printedMenu <<std::flush;
+}
+
+CMyApp::CMyApp(void):quit(false), pause(false), delta_time(1.0E-3), time_scaler(1.0), G(0.0001), num_particles(5000)
+{
+	// particles
+
+	init_pos = INIT_POS_CYLINDRICAL;
 
 	// masses
 	initialMasses = std::vector<float>(num_particles, 1);
-
 	// velocities
 	initialVelocities = std::vector<float>(num_particles * 3, 0);
-
 	// initial positions
 	initialPositions = std::vector<float>(num_particles * 3, 0);
 
-	generate(initialMasses.begin(), initialMasses.end(), [&]() {return randBetween(.1, 2); });
-	//generate(initialVelocities.begin(), initialVelocities.end(), [&]() {return randBetween(-1, 1); });
-	generate(initialPositions.begin(), initialPositions.end(), [&]() {return randBetween(-1, 1); });
+	generateParticles();
 
 
+	// view
 	model = glm::mat4(1.0f);
 	view = glm::mat4(1.0f);
 	projection = glm::perspective(glm::radians(45.0f), static_cast<float>(windowW) / windowH, 0.1f, 100.0f);
@@ -369,7 +495,17 @@ CMyApp::CMyApp(void):quit(false), pause(true), delta_time(1.0E-4), time_scaler(1
 
 	M = projection * view * model;
 
+
+	// menu
 	std::cout.precision(3);
+	menu = std::stringstream();
+	menu << "R - Run" << std::endl;
+	menu << "P - Pause" << std::endl;
+	menu << "Esc - Quit" << std::endl;
+	menu << "F1 - Reset" << std::endl;
+	menu << "F2 - Change initialization" << std::endl;
+
+	printMenu();
 }
 
 CMyApp::~CMyApp(void)

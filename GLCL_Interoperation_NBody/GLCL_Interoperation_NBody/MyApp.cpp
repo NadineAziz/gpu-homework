@@ -122,7 +122,7 @@ bool CMyApp::InitCL()
 		kernel_update = cl::Kernel(program, "update");
 		
 		// Create Mem Objs
-		cl_vbo_mem = cl::BufferGL(context, CL_MEM_WRITE_ONLY, vbo);
+		cl_vbo_mem = cl::BufferGL(context, CL_MEM_READ_WRITE, vbo);
 		cl_v = cl::Buffer(context, CL_MEM_READ_WRITE, num_particles * sizeof(float) * 3);
 		cl_m = cl::Buffer(context, CL_MEM_READ_WRITE, num_particles * sizeof(float));
 
@@ -324,6 +324,11 @@ void CMyApp::KeyboardDown(SDL_KeyboardEvent& key)
 		break;
 
 	case SDLK_F5:
+		/*
+		##########################################################################################################
+													Problem here.
+		##########################################################################################################
+		*/
 		clearConsole();
 		SDL_SetRelativeMouseMode(SDL_FALSE);
 		std::cout << "Click here and enter the desired value: ";
@@ -332,14 +337,24 @@ void CMyApp::KeyboardDown(SDL_KeyboardEvent& key)
 		if(temp != 0)
 			num_particles = temp;
 
+		glBindBuffer(GL_ARRAY_BUFFER_ARB, vbo);
+		glDeleteBuffers(1, &vbo);
+		vbo = initVBO(num_particles);
+
 		initMasses();
 		initPositions();
 		initVelocities();
+		resetSimulation();
 
 		SDL_RaiseWindow(win);
 		SDL_WarpMouseInWindow(win, 400, 400);
 		SDL_SetRelativeMouseMode(SDL_TRUE);
 		printMenu();
+		/*
+		##########################################################################################################
+													
+		##########################################################################################################
+		*/
 		break;
 
 	case SDLK_F6:

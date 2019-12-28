@@ -68,8 +68,8 @@ int main( int argc, char* args[] )
     win = SDL_CreateWindow( "Hello SDL&OpenGL!",		// az ablak fejléce
 							700,						// az ablak bal-felsõ sarkának kezdeti X koordinátája
 							100,						// az ablak bal-felsõ sarkának kezdeti Y koordinátája
-							800,						// ablak szélessége
-							800,						// és magassága
+							ST_DEFAULT_WINOW_WIDTH,		// ablak szélessége
+							ST_DEFAULT_WINOW_HEIGHT,	// és magassága
 							SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);			// megjelenítési tulajdonságok
 
 
@@ -129,12 +129,15 @@ int main( int argc, char* args[] )
 	// feldolgozandó üzenet ide kerül
 	SDL_Event ev;
 	
+
 	// alkalmazas példánya
-	CMyApp app(win);
-	if (!app.InitGL() || !app.InitCL())
+	MySettings* settings = new MySettings();
+	CMyApp* app = new CMyApp(win, settings);
+
+	if (!app->InitGL() || !app->InitCL())
 	{
 		SDL_DestroyWindow(win);
-		std::cout << "[app.Init] Az alkalmazás inicializálása közben hibatörtént!" << std::endl;
+		std::cout << "[app->Init] Az alkalmazás inicializálása közben hibatörtént!" << std::endl;
 		return 1;
 	}
 	
@@ -143,7 +146,7 @@ int main( int argc, char* args[] )
 	SDL_WarpMouseInWindow(win, 400, 400);
 	SDL_SetRelativeMouseMode(SDL_TRUE);
 	
-	while (!app.getQuit())
+	while (!app->getQuit())
 	{
 		// amíg van feldolgozandó üzenet dolgozzuk fel mindet:
 		while ( SDL_PollEvent(&ev) )
@@ -151,38 +154,55 @@ int main( int argc, char* args[] )
 			switch (ev.type)
 			{
 			case SDL_QUIT:
-				app.setQuit(true);
+				app->setQuit(true);
 				break;
 			case SDL_KEYDOWN:
-				app.KeyboardDown(ev.key);
+				app->KeyboardDown(ev.key);
+				if (ev.key.keysym.sym == SDLK_F5)
+				{
+					app->Clean();
+					delete app;
+					SDL_SetRelativeMouseMode(SDL_FALSE);
+					unsigned int num = 0;
+					std::cin >> num;
+					settings->set_nbParticles(num);
+
+					app = new CMyApp(win, settings);
+					app->InitGL();
+					app->InitCL();
+
+					SDL_RaiseWindow(win);
+					SDL_WarpMouseInWindow(win, 400, 400);
+					SDL_SetRelativeMouseMode(SDL_TRUE);
+				}
 				break;
 			case SDL_KEYUP:
-				app.KeyboardUp(ev.key);
+				app->KeyboardUp(ev.key);
 				break;
 			case SDL_MOUSEBUTTONDOWN:
-				app.MouseDown(ev.button);
+				app->MouseDown(ev.button);
 				break;
 			case SDL_MOUSEBUTTONUP:
-				app.MouseUp(ev.button);
+				app->MouseUp(ev.button);
 				break;
 			case SDL_MOUSEWHEEL:
-				app.MouseWheel(ev.wheel);
+				app->MouseWheel(ev.wheel);
 				break;
 			case SDL_MOUSEMOTION:
-				app.MouseMove(ev.motion);
+				app->MouseMove(ev.motion);
 				break;
 			case SDL_WINDOWEVENT:
 				if ( ev.window.event == SDL_WINDOWEVENT_SIZE_CHANGED )
 				{
-					app.Resize(ev.window.data1, ev.window.data2);
+					app->Resize(ev.window.data1, ev.window.data2);
 				}
 				break;
 			}
 		}
 
 		nanoTimer.Start();
-		app.Update();
-		app.Render();
+		app->Update();
+		app->Render();
 
 		window_title.str(std::string());
 		window_title.precision(4);
@@ -198,7 +218,9 @@ int main( int argc, char* args[] )
 	// 
 
 	// takarítson el maga után az objektumunk
-	app.Clean();
+	app->Clean();
+	delete settings;
+	delete app;
 
 	SDL_GL_DeleteContext(context);
 	SDL_DestroyWindow( win );

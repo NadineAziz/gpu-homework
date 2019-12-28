@@ -36,28 +36,12 @@
 #include <GL/glx.h>
 #endif
 
-///////////////////////////////////////////////////
-////    defines for particle initialization    ////
-///////////////////////////////////////////////////
-
-// position
-#define INIT_POS_UNIFORM     0
-#define INIT_POS_CYLINDRICAL 1
-#define INIT_POS_SPHERICAL   2
-
-// velocity
-#define INIT_VEL_UNIFORM     0
-#define INIT_VEL_ZERO        1
-
-//mass
-#define INIT_MAS_UNIFORM     0
-#define INIT_MAS_CONSTATNS   1
-///////////////////////////////////////////////////
+#include "MySettings.h"
 
 class CMyApp
 {
 public:
-	CMyApp(SDL_Window*);
+	CMyApp(SDL_Window*, MySettings*);
 	~CMyApp(void);
 
 	bool InitGL();
@@ -89,7 +73,6 @@ public:
 protected:
 
 	// GL
-	int windowH, windowW;
 	GLuint m_vaoID, vbo, texture;
 	void renderVBO( int vbolen );
 
@@ -104,19 +87,9 @@ protected:
 	cl::Buffer cl_v, cl_m;
 
 
-	unsigned int num_particles;
-	const float particle_size = 0.02f;
-
-
 	std::vector<float> initialMasses;
 	std::vector<float> initialPositions;
 	std::vector<float> initialVelocities;
-
-	bool quit;
-	bool pause;
-	float delta_time;
-	float time_scaler;
-	float G;
 
 
 	glm::mat4 M;
@@ -132,9 +105,8 @@ protected:
 	SDL_Window* win;
 	std::string extraInfo;
 	std::stringstream menu;
-	int init_pos;
-	int init_vel;
-	int init_mas;
+
+	MySettings* settings;
 
 #pragma region GL functions
 

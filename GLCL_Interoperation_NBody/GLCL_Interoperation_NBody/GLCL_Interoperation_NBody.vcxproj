@@ -98,6 +98,7 @@
     <ClCompile Include="gVertexBuffer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MyApp.cpp" />
+    <ClCompile Include="MySettings.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gCamera.h" />
@@ -106,6 +107,7 @@
     <ClInclude Include="gTimer.h" />
     <ClInclude Include="gVertexBuffer.h" />
     <ClInclude Include="MyApp.h" />
+    <ClInclude Include="MySettings.h" />
     <ClInclude Include="oclUtils.h" />
   </ItemGroup>
   <ItemGroup>
